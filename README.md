@@ -173,3 +173,55 @@ class HandleInertiaRequests extends Middleware
 }
 ```
 
+## app.js
+```javascript
+mport './bootstrap';
+
+import { createApp, h } from 'vue'
+import { createInertiaApp } from '@inertiajs/vue3'
+import { ZiggyVue } from '../../vendor/tightenco/ziggy/dist/vue.es'
+import { modal } from 'momentum-modal'
+import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
+import toast from './plugins/toast';
+
+const appName = import.meta.env.VITE_APP_NAME
+
+createInertiaApp({
+    title: (title) => `${title} - ${appName}`,
+    resolve: name => {
+        const pages = import.meta.glob('./Pages/**/*.vue', { eager: true })
+        return pages[`./Pages/${name}.vue`]
+    },
+    setup({ el, App, props, plugin }) {
+        createApp({ render: () => h(App, props) })
+        .use(plugin)
+        .use(toast)
+        .use(modal, {
+            resolve: (name) => resolvePageComponent(`./Modals/${name}.vue`, import.meta.glob(`./Modals/**/*.vue`))
+        })
+        .use(ZiggyVue, Ziggy)
+        .mount(el)
+    },
+})
+```
+
+## Plugin js/plugins/toast.js
+```javascript
+import { router, usePage } from '@inertiajs/vue3'
+import useToast from '@/composables/useToast'
+
+const { toast } = useToast()
+
+export default () => {
+    router.on('finish', () => {
+        let body = usePage().props.toast
+
+        if (body) {
+            toast(body, {
+                timeout: 2000
+            })
+        }
+    })
+}
+```
+
